@@ -3,7 +3,18 @@ local config_file = ".arduino_config.lua"
 
 -- Load configuration function
 local function load_arduino_config()
-    local config = loadfile(config_file)
+    -- Try to find config in current directory first
+    local config_path = vim.fn.getcwd() .. "/" .. config_file
+    if vim.fn.filereadable(config_path) == 0 then
+        -- Try fallback to home directory
+        config_path = vim.fn.expand("$HOME") .. "/" .. config_file
+    end
+    if vim.fn.filereadable(config_path) == 0 then
+        -- Try the project root (where .git or main sketch is)
+        config_path = vim.fn.expand("%:p:h") .. "/" .. config_file
+    end
+    
+    local config = loadfile(config_path)
     if config then
         local ok, settings = pcall(config)
         if ok and settings then
