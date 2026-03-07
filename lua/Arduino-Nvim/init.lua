@@ -8,6 +8,7 @@ require("Arduino-Nvim.libGetter")
 M.board = "arduino:avr:uno"
 M.port = "/dev/ttyUSB0"
 M.baudrate = 115200
+M.fqbn = "arduino:avr:uno"
 local config_file = ".arduino_config.lua"
 
 function Trim(s)
@@ -16,7 +17,7 @@ end
 
 function M.status()
 	local buf, win, opts = M.create_floating_cli_monitor()
-	local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board, M.port, M.baudrate)
+	local data = string.format("Board: %s\nPort: %s\nBaudrate: %s\nFQBN: %s", M.board, M.port, M.baudrate, M.fqbn)
 	M.append_to_buffer({ data }, buf, win, opts)
 end
 
@@ -28,6 +29,7 @@ function M.save_config()
 		file:write(string.format("  board = %q,\n", M.board))
 		file:write(string.format("  port = %q,\n", M.port))
 		file:write(string.format("  baudrate = %q,\n", M.baudrate))
+		file:write(string.format("  fqbn = %q,\n", M.fqbn))
 		file:write("}\n")
 		file:close()
 	else
@@ -46,6 +48,7 @@ function M.load_or_create_config()
 			file:write("M.board = '" .. M.board .. "'\n")
 			file:write("M.port = '" .. M.port .. "'\n")
 			file:write("M.baudrate =" .. M.baudrate .. "\n")
+			file:write("M.fqbn = '" .. M.fqbn .. "'\n")
 			file:write("return M\n")
 			file:close()
 		else
@@ -60,6 +63,7 @@ function M.load_or_create_config()
 				M.board = settings.board or M.board
 				M.port = settings.port or M.port
 				M.baudrate = settings.baudrate or M.baudrate
+				M.fqbn = settings.fqbn or M.fqbn
 				vim.notify("Config loaded from file: " .. config_file, vim.log.levels.INFO)
 			end
 		end
@@ -133,6 +137,13 @@ end
 function M.set_baudrate(baudrate)
 	M.baudrate = Trim(baudrate)
 	vim.notify("Baud rate set to: " .. baudrate)
+	M.save_config()
+end
+
+-- Function to set the FQBN and save config
+function M.set_fqbn(fqbn)
+	M.fqbn = Trim(fqbn)
+	vim.notify("FQBN set to: " .. fqbn)
 	M.save_config()
 end
 
@@ -378,6 +389,7 @@ function M.select_board_gui(callback)
 					local selection = action_state.get_selected_entry()
 					if selection then
 						M.set_board(selection.value) -- Use the selected FQBN
+						M.set_fqbn(selection.value) -- Also set FQBN to the same value
 						actions.close(prompt_bufnr)
 						if callback then
 							callback()
@@ -731,6 +743,17 @@ vim.api.nvim_create_user_command("InoStatus", function()
 end, {})
 vim.api.nvim_create_user_command("InoList", function()
 	M.InoList()
+end, {})
+vim.api.nvim_create_user_command("InoSetFQBN", function(opts)
+	M.set_fqbn(opts.args)
+end, { nargs = 1 })
+
+-- Update InoSelectBoard to also set FQBN after board selection
+vim.api.nvim_create_user_command("InoSelectBoard", function()
+	M.select_board_gui(function()
+		-- After selecting board, reload config to get updated FQBN
+		M.load_or_create_config()
+	end)
 end, {})
 
 return M

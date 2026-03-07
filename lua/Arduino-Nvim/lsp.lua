@@ -14,6 +14,7 @@ local function load_arduino_config()
 	return {
 		board = "arduino:avr:uno",
 		port = "/dev/ttyACM0",
+		fqbn = "arduino:avr:uno",
 	}
 end
 
@@ -28,6 +29,7 @@ local function check_or_create_sketch_yaml(settings)
 	-- Load current config for board and port
 	local board = settings.board
 	local port = settings.port
+	local fqbn = settings.fqbn or board
 
 	-- Check if sketch.yaml exists
 	if vim.fn.filereadable(yaml_file) == 0 then
@@ -35,7 +37,7 @@ local function check_or_create_sketch_yaml(settings)
 		vim.notify("sketch.yaml not found. Creating with default settings.", vim.log.levels.INFO)
 		local file = io.open(yaml_file, "w")
 		if file then
-			file:write("fqbn: " .. board .. "\n")
+			file:write("fqbn: " .. fqbn .. "\n")
 			file:write("port: " .. port .. "\n")
 			file:close()
 		end
@@ -50,12 +52,12 @@ local function check_or_create_sketch_yaml(settings)
 		end
 
 		-- Update fqbn or port if they differ from config
-		if current_yaml["default_fqbn"] ~= board or current_yaml["default_port"] ~= port then
+		if current_yaml["fqbn"] ~= fqbn or current_yaml["port"] ~= port then
 			vim.notify("Updating fqbn or port in sketch.yaml to match config.", vim.log.levels.INFO)
 			local file = io.open(yaml_file, "w")
 			if file then
-				file:write("default_fqbn: " .. board .. "\n")
-				file:write("default_port: " .. port .. "\n")
+				file:write("fqbn: " .. fqbn .. "\n")
+				file:write("port: " .. port .. "\n")
 				file:close()
 			else
 				vim.nofify("Error: Cannot update sketch file.", vim.log.levels.ERROR)
@@ -79,6 +81,7 @@ local function setup_arduino_lsp()
 	local settings = load_arduino_config()
 	check_or_create_sketch_yaml(settings)
 	local board = settings.board or "arduino:avr:uno" -- Default fallback
+	local fqbn = settings.fqbn or board
 
 	-- Find required executables
 	local clangd_path = find_executable("clangd") or "/usr/bin/clangd"
@@ -101,7 +104,7 @@ local function setup_arduino_lsp()
 			"-clangd",
 			clangd_path,
 			"-fqbn",
-			board,
+			fqbn,
 		},
 		filetypes = { "arduino", "cpp" },
 		root_dir = function(_)
