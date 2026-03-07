@@ -126,8 +126,12 @@ local function setup_arduino_lsp()
         if config then
             local ok, settings = pcall(config)
             if ok and settings then
+                vim.notify("LSP: settings.board=" .. tostring(settings.board), vim.log.levels.INFO)
+                vim.notify("LSP: settings.fqbn=" .. tostring(settings.fqbn), vim.log.levels.INFO)
                 fqbn = settings.fqbn or settings.board or fqbn
                 vim.notify("LSP: Config loaded, FQBN=" .. fqbn, vim.log.levels.INFO)
+            else
+                vim.notify("LSP: Failed to load config: " .. tostring(settings), vim.log.levels.ERROR)
             end
         end
     else
