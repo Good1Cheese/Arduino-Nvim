@@ -79,7 +79,7 @@ end
 -- Function to create a floating CLI monitor window that starts small and grows
 function M.create_floating_cli_monitor()
     local width = vim.o.columns -- Full width of the screen
-    local initial_height = 5 -- Start with a small height (adjustable)
+    local initial_height = 5    -- Start with a small height (adjustable)
 
     -- Create a buffer for the floating window
     local buf = vim.api.nvim_create_buf(false, true)
@@ -389,7 +389,7 @@ function M.select_board_gui(callback)
                     local selection = action_state.get_selected_entry()
                     if selection then
                         M.set_board(selection.value) -- Use the selected FQBN
-                        M.set_fqbn(selection.value) -- Also set FQBN to the same value
+                        M.set_fqbn(selection.value)  -- Also set FQBN to the same value
                         actions.close(prompt_bufnr)
                         if callback then
                             callback()
@@ -424,7 +424,7 @@ function M.select_port_gui()
     local ports = {}
     for line in result:gmatch("[^\r\n]+") do
         if line:match("^/dev/tty") or line:match("^/dev/cu") or line:match("^COM") then -- Matches Linux/macOS and Windows COM port formats
-            table.insert(ports, line:match("^(%S+)"))                             -- Capture the port name only
+            table.insert(ports, line:match("^(%S+)"))                                   -- Capture the port name only
         end
     end
 
