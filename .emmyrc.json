@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EmmyLuaLs/emmylua-analyzer-rust/refs/heads/main/crates/emmylua_code_analysis/resources/schema.json",
+  "diagnostics": {
+    "globals": ["vim"]
+  },
+  "workspace": {
+    "library": [
+		"/usr/share/nvim/runtime"
+    ]
+  },
+  "runtime": {
+    "version": "Lua5.1",
+    "extensions": [".lua", ".lua.txt"],
+    "requirePattern": ["?.lua", "?/init.lua"]
+  }
+}

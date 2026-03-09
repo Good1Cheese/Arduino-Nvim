@@ -8,25 +8,27 @@ local function load_arduino_config()
 	if current_dir == "" or current_dir == "." then
 		current_dir = vim.fn.getcwd()
 	end
-	
+
 	-- Try to find config file in current directory
 	local config_path = current_dir .. "/" .. config_file
-	
+
+	-- Get absolute path
+	local abs_config_path = vim.fn.fnamemodify(config_path, ":p")
+
 	-- Check if file exists
-	if vim.fn.filereadable(config_path) == 0 then
+	if vim.fn.filereadable(abs_config_path) == 0 then
 		-- Fallback defaults if config file not found
-		vim.notify("Config file not found at " .. config_path .. ", using defaults", vim.log.levels.WARN)
+		vim.notify("Config file not found at " .. abs_config_path .. ", using defaults", vim.log.levels.WARN)
 		return {
 			board = "arduino:avr:uno",
 			port = "/dev/ttyACM0",
 		}
 	end
-	
-	local config = loadfile(config_path)
+
+	local config = loadfile(abs_config_path)
 	if config then
 		local ok, settings = pcall(config)
 		if ok and settings then
-			vim.notify("Config loaded from " .. config_path .. ", board: " .. (settings.board or "unknown"), vim.log.levels.INFO)
 			return settings
 		else
 			vim.notify("Error loading config file: " .. tostring(settings), vim.log.levels.ERROR)
@@ -45,16 +47,12 @@ local function check_or_create_sketch_yaml(settings)
 	local yaml_file = "sketch.yaml"
 	local ino_files = vim.fn.glob("*.ino", false, true)
 	if #ino_files == 0 then
-		-- No .ino files found, do not proceed
 		return
 	end
-	-- Load current config for board and port
 	local board = settings.board
 	local port = settings.port
 
-	-- Check if sketch.yaml exists
 	if vim.fn.filereadable(yaml_file) == 0 then
-		-- If not, create sketch.yaml with default settings
 		vim.notify("sketch.yaml not found. Creating with default settings.", vim.log.levels.INFO)
 		local file = io.open(yaml_file, "w")
 		if file then
@@ -63,7 +61,6 @@ local function check_or_create_sketch_yaml(settings)
 			file:close()
 		end
 	else
-		-- Read existing file and check if fqbn and port match the config
 		local current_yaml = {}
 		for line in io.lines(yaml_file) do
 			local key, value = line:match("(%S+):%s*(%S+)")
@@ -72,7 +69,6 @@ local function check_or_create_sketch_yaml(settings)
 			end
 		end
 
-		-- Update fqbn or port if they differ from config
 		if current_yaml["default_fqbn"] ~= board or current_yaml["default_port"] ~= port then
 			vim.notify("Updating fqbn or port in sketch.yaml to match config.", vim.log.levels.INFO)
 			local file = io.open(yaml_file, "w")
@@ -81,7 +77,7 @@ local function check_or_create_sketch_yaml(settings)
 				file:write("default_port: " .. port .. "\n")
 				file:close()
 			else
-				vim.nofify("Error: Cannot update sketch file.", vim.log.levels.ERROR)
+				vim.notify("Error: Cannot update sketch file.", vim.log.levels.ERROR)
 			end
 		end
 	end
@@ -110,14 +106,14 @@ local function setup_arduino_lsp()
 
 	-- Get the root directory where the LSP will start
 	local root_dir = vim.fn.getcwd()
-	
-	-- Load board configuration at setup time (when opening a file in the sketch directory)
-	local settings = load_arduino_config()
-	local board = settings.board or "arduino:avr:uno" -- Default fallback
-	
-	vim.notify("Arduino LSP: Starting with FQBN = " .. board .. " (cwd: " .. root_dir .. ")", vim.log.levels.INFO)
 
-	-- Configure the Arduino language server using loaded settings
+	-- Load board configuration
+	local settings = load_arduino_config()
+	local board = settings.board or "arduino:avr:uno"
+
+	vim.notify("Arduino LSP: Starting with FQBN = " .. board, vim.log.levels.INFO)
+
+	-- Use lspconfig (deprecated but still works in Neovim 0.11+)
 	require("lspconfig").arduino_language_server.setup({
 		cmd = {
 			"arduino-language-server",
@@ -138,7 +134,6 @@ local function setup_arduino_lsp()
 	})
 end
 
--- Export the setup function
 return {
 	setup = setup_arduino_lsp,
 }
