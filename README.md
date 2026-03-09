@@ -39,6 +39,18 @@ return {
     "neovim/nvim-lspconfig",
   },
   config = function()
+    -- Keymaps
+    local map = vim.keymap.set
+    map("n", "<Leader>au", ":InoUpload<CR>", { silent = true, desc = "Arduino: Upload" })
+    map("n", "<Leader>ac", ":InoCheck<CR>", { silent = true, desc = "Arduino: Compile" })
+    map("n", "<Leader>as", ":InoStatus<CR>", { silent = true, desc = "Arduino: Status" })
+    map("n", "<Leader>ag", ":InoGUI<CR>", { silent = true, desc = "Arduino: GUI" })
+    map("n", "<Leader>am", ":InoMonitor<CR>", { silent = true, desc = "Arduino: Monitor" })
+    map("n", "<Leader>al", ":InoLib<CR>", { silent = true, desc = "Arduino: Library" })
+    map("n", "<Leader>ab", ":InoSelectBoard<CR>", { silent = true, desc = "Arduino: Select board" })
+    map("n", "<Leader>ap", ":InoSelectPort<CR>", { silent = true, desc = "Arduino: Select port" })
+    map("n", "<Leader>ar", ":InoUploadReset<CR>", { silent = true, desc = "Arduino: Upload reset" })
+
     -- Load Arduino plugin for .ino files
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "arduino",

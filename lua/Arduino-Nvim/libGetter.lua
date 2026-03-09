@@ -171,9 +171,9 @@ function M.library_manager()
             if entry and entry.display_name and entry.lib_name then
                 return {
                     value = entry.display_name,
-                    display = entry.display_name,         -- Show name with markers
+                    display = entry.display_name,                        -- Show name with markers
                     ordinal = entry.hidden_tag .. " " .. entry.lib_name, -- Use tag and lib_name for searchability
-                    lib_name = entry.lib_name,            -- Store actual library name
+                    lib_name = entry.lib_name,                           -- Store actual library name
                 }
             else
                 vim.notify("Error: entry or entry.display_name or entry.lib_name is nil", vim.log.levels.ERROR)
