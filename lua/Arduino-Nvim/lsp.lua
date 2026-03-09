@@ -1,16 +1,39 @@
 -- Path to the configuration file where board and port are saved
 local config_file = ".arduino_config.lua"
 
--- Load configuration function
+-- Load configuration function - searches from current file's directory
 local function load_arduino_config()
-	local config = loadfile(config_file)
+	-- Get the directory of the current buffer/file
+	local current_dir = vim.fn.expand("%:p:h")
+	if current_dir == "" or current_dir == "." then
+		current_dir = vim.fn.getcwd()
+	end
+	
+	-- Try to find config file in current directory
+	local config_path = current_dir .. "/" .. config_file
+	
+	-- Check if file exists
+	if vim.fn.filereadable(config_path) == 0 then
+		-- Fallback defaults if config file not found
+		vim.notify("Config file not found at " .. config_path .. ", using defaults", vim.log.levels.WARN)
+		return {
+			board = "arduino:avr:uno",
+			port = "/dev/ttyACM0",
+		}
+	end
+	
+	local config = loadfile(config_path)
 	if config then
 		local ok, settings = pcall(config)
 		if ok and settings then
+			vim.notify("Config loaded from " .. config_path .. ", board: " .. (settings.board or "unknown"), vim.log.levels.INFO)
 			return settings
+		else
+			vim.notify("Error loading config file: " .. tostring(settings), vim.log.levels.ERROR)
 		end
 	end
 	-- Fallback defaults if config loading fails
+	vim.notify("Config load failed, using defaults", vim.log.levels.WARN)
 	return {
 		board = "arduino:avr:uno",
 		port = "/dev/ttyACM0",
@@ -75,11 +98,6 @@ end
 
 -- Set up the Arduino language server with saved configuration
 local function setup_arduino_lsp()
-	-- Load board configuration
-	local settings = load_arduino_config()
-	check_or_create_sketch_yaml(settings)
-	local board = settings.board or "arduino:avr:uno" -- Default fallback
-
 	-- Find required executables
 	local clangd_path = find_executable("clangd") or "/usr/bin/clangd"
 	local arduino_cli_config = vim.fn.expand("$HOME/.arduino15/arduino-cli.yaml")
@@ -89,6 +107,15 @@ local function setup_arduino_lsp()
 		vim.notify("Error: arduino-language-server not found in PATH. Please install it.", vim.log.levels.ERROR)
 		return
 	end
+
+	-- Get the root directory where the LSP will start
+	local root_dir = vim.fn.getcwd()
+	
+	-- Load board configuration at setup time (when opening a file in the sketch directory)
+	local settings = load_arduino_config()
+	local board = settings.board or "arduino:avr:uno" -- Default fallback
+	
+	vim.notify("Arduino LSP: Starting with FQBN = " .. board .. " (cwd: " .. root_dir .. ")", vim.log.levels.INFO)
 
 	-- Configure the Arduino language server using loaded settings
 	require("lspconfig").arduino_language_server.setup({
@@ -105,7 +132,7 @@ local function setup_arduino_lsp()
 		},
 		filetypes = { "arduino", "cpp" },
 		root_dir = function(_)
-			return vim.fn.getcwd()
+			return root_dir
 		end,
 		handlers = {},
 	})
